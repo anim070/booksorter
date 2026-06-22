@@ -177,7 +177,7 @@ def save_notes(name):
     except:
         os.unlink(tmp)
         return jsonify({"ok": False, "error": "Failed to save"}), 500
-    return jsonify({"ok": True})
+    return "Saved" if notes else "Cleared"
 
 if __name__ == "__main__":
     app.run(debug=True)
