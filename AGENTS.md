@@ -1,68 +1,57 @@
 # Booksorter
 
-Project with two Python scripts for managing a book collection.
+Python tools for managing a book collection.
 
 ## Scripts
 
-### `sort_books.py` — Categorize books
+### `python3 sort_books.py` — Categorize books
 
-Reads book filename lists, strips download-site metadata, and groups books into categories.
+Reads `book_list.txt` / `book_list_2.txt` (one filename per line, `N:` prefixes stripped), strips download-site metadata, groups into categories. Output to stdout only. Stdlib only.
 
-**Run**: `python3 sort_books.py` — reads `book_list.txt` and `book_list_2.txt`, outputs categorized groups to stdout
+### `python3 build_book_db.py [--db books.json] /path/to/books [...]` — Build JSON database
 
-### `build_book_db.py` — Build JSON database (new)
+Recursively scans for PDF/EPUB/image files, extracts embedded metadata (PyMuPDF, ebooklib, Pillow), merges into `book_database.json`. Imports `sort_books.py` for name cleaning. Incremental: reads DB on start, fills nulls only, never overwrites `publisher`/`isbn`/`notes`. Atomic save via tempfile+replace.
 
-Recursively scans directories for PDF/EPUB/image files, extracts embedded metadata, and maintains a JSON database with deduplication.
+### `python3 search_web.py` — Flask + HTMX search webapp
 
-**Run**: `python3 build_book_db.py [--db books.json] /path/to/books [/path/to/more ...]`
-
-**Dependencies**: `PyMuPDF`, `ebooklib`, `Pillow` (install with `pip3 install`)
-
-**Database file**: `book_database.json` (default), keyed by normalized book name.
+Anna's Archive-style SPA that searches `book_database.json`. Needs `pip install flask`. Opens on http://127.0.0.1:5000.
 
 ## Key files
 
-- `sort_books.py` — categorizer (stdlib only). Entrypoint is `main()`.
-- `build_book_db.py` — database builder (needs PyMuPDF, ebooklib, Pillow). Entrypoint is `main()`.
-- `book_list.txt` / `book_list_2.txt` — input files for sort_books.py, one filename per line, optional `N:` prefix
-- `book_database.json` — output of build_book_db.py
-- `docs/superpowers/specs/2026-06-23-book-database-builder-design.md` — design spec
-- `docs/superpowers/plans/2026-06-23-build-book-db-plan.md` — implementation plan
+- `sort_books.py` — categorizer (stdlib). Entrypoint: `main()`.
+- `build_book_db.py` — database builder (needs PyMuPDF, ebooklib, Pillow). Entrypoint: `main()`.
+- `search_web.py` — Flask webapp (needs flask). Entrypoint: module-level `app.run()`.
+- `book_database.json` — shared DB, 3.5K entries, in `.gitignore`
+- `templates/` — `base.html`, `index.html`, `_results.html`, `detail.html` (Jinja2 + HTMX)
+- `static/style.css` — Anna's Archive-inspired styles
 
 ## Architecture (sort_books.py)
 
-- `strip_metadata()` — regex-heavy cleanup of download-site artifacts (z-lib, Anna's Archive, ISBNs, etc.)
-- `extract_clean_name()` — splits file extension, runs `strip_metadata`, strips leading numbers
-- `classify()` — checks Bengali Unicode range first, then regex-matches against `CATEGORIES` keywords; falls back to "Miscellaneous"
-- `normalize_name()` — strips parenthetical notes and punctuation from the clean name
-- Output is printed to stdout only (no file write)
+- `strip_metadata()` — regex cleanup of z-lib, Anna's Archive, ISBNs, HTML entities, hex hashes, libgen, PDFDrive, `[EARLY RELEASE]`, DOI, `.fdmdownload`, `(1)` dup markers, etc.
+- `extract_clean_name()` — strips extension, calls `strip_metadata`, strips leading numbers
+- `classify()` — Bengali check (`\u0980-\u09FF`) on raw filename first, then regex CATEGORIES keywords; fallback "Miscellaneous"
+- `normalize_name()` — strips parenthetical notes and punctuation
+- `book_list.txt` has `N:` line prefix, `book_list_2.txt` does not
 
-## Architecture (build_book_db.py)
+## Architecture (search_web.py)
 
-- `scan_directory()` — recursive os.walk, yields (path, ext) for supported formats
-- `extract_pdf_metadata()` — PyMuPDF: page_count, author, publisher from doc metadata; ISBN from subject/filename
-- `extract_epub_metadata()` — ebooklib: author, publisher, ISBN from OPF metadata; spine-based page estimate
-- `extract_image_metadata()` — Pillow: 1-page placeholder
-- `extract_metadata()` — dispatches by file extension to the right extractor
-- `build_entry()` — combines cleaned name (via sort_books), classification, and file metadata into a DB entry dict
-- `merge_entry()` — incremental merge: fills nulls only, never overwrites populated fields, tracks duplicates
-- `load_database()` / `save_database()` — JSON I/O with atomic save via tempfile+replace
+- Routes: `GET /` (search page), `GET /search` (HTMX partial), `GET /book/<name>` (detail), `POST /book/<name>/open` (macOS Finder), `POST /book/<name>/copy-path`, `POST /book/<name>/notes` (form data, atomic write)
+- Search: case-insensitive substring on `normalized_name`/`author`/`isbn`, filters by category/format/duplicate, sort by title/author/size/pages, 20 per page
+- `open` uses `subprocess.run(["open", "-R", path])` — macOS only
+- DB loaded at module level; `get_all_categories()` and `get_all_formats()` iterate all entries on every call
+- HTMX CDN `@1.9.10` from unpkg, partial swaps on `#search-layout`
+- Tags: toasts via `#toast` div, copy-path via JS `navigator.clipboard`
 
 ## JSON schema (book_database.json)
 
-Dict keyed by `normalized_name`. Each entry:
-- `normalized_name`, `raw_filenames` (array), `author`, `publisher`, `category`,
-  `page_count`, `isbn`, `file_size`, `file_path`, `format`, `last_updated`,
-  `duplicate` (bool), `notes` (manual, never overwritten)
+Dict keyed by `normalized_name`. Each entry: `normalized_name`, `raw_filenames` (array), `author`, `publisher`, `category`, `page_count`, `isbn`, `file_size`, `file_path`, `format`, `last_updated`, `duplicate` (bool), `notes`.
 
 ## Gotchas
 
-- Bengali detection uses `\u0980-\u09FF` Unicode range check on the raw filename (before cleaning)
-- Category keywords are regex patterns with `re.I` — be careful adding new patterns not to cause accidental matches across categories
-- Many metadata-cleaning regexes are fragile; inspect output when adding new input sources
-- `strip_metadata()` also strips HTML entities (`#x98;`), leading hex hash prefixes (`fa61f02_`), `[EARLY RELEASE]` tags, DOI brackets, `- libgen.li`, `- PDFDrive`, `.fdmdownload` suffixes, and trailing `(1)` duplicate markers
-- The `-- Anna's Archive` suffix regexes are particularly convoluted — changing them might break cleanup for one format while fixing another
-- `book_list.txt` has `N:` line number prefixes that are stripped before processing; `book_list_2.txt` does not
-- `build_book_db.py` imports from `sort_books.py` for name cleaning and classification
-- `build_book_db.py` author extraction uses embedded metadata first, filename fallback
-- db fields `publisher`, `isbn`, `notes` are never overwritten once populated (preserves manual edits)
+- Bengali detection checks raw filename before any cleaning
+- Category regex patterns use `re.I` — easy to accidentally overlap categories
+- `strip_metadata()` regexes are fragile (Anna's Archive suffixes especially convoluted)
+- `build_book_db.py` author: embedded metadata first, filename fallback
+- DB fields `publisher`, `isbn`, `notes`: never overwritten once populated
+- `notes` are stored as HTML-escaped by Jinja2 autoescape; textarea content renders escaped entities like `&amp;`
+- Bare `except:` must not be used in notes save path (caught in review); use `except Exception:`
