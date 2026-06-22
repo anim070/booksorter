@@ -138,7 +138,7 @@ def detail(name):
     for key, e in db.items():
         if e.get("duplicate") and e.get("normalized_name") == name:
             duplicates.append(e)
-    return render_template("detail.html", book=entry, duplicates=duplicates)
+    return render_template("detail.html", book=entry, duplicates=duplicates, total=len(db))
 
 @app.route("/book/<path:name>/open", methods=["POST"])
 def open_file(name):
@@ -166,7 +166,7 @@ def save_notes(name):
     name = unquote(name)
     entry = db.get(name)
     if not entry:
-        return jsonify({"ok": False, "error": "Book not found"}), 404
+        return "Book not found", 404
     notes = request.form.get("notes", "")
     entry["notes"] = notes
     fh, tmp = tempfile.mkstemp(dir=os.path.dirname(DB_PATH), suffix=".tmp")
@@ -174,9 +174,9 @@ def save_notes(name):
         with os.fdopen(fh, "w") as f:
             json.dump(db, f, indent=2, ensure_ascii=False)
         os.replace(tmp, DB_PATH)
-    except:
+    except Exception:
         os.unlink(tmp)
-        return jsonify({"ok": False, "error": "Failed to save"}), 500
+        return "Failed to save", 500
     return "Saved" if notes else "Cleared"
 
 if __name__ == "__main__":
