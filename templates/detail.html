@@ -50,14 +50,12 @@
     <div class="detail-actions">
       <button class="btn"
               hx-post="{{ url_for('open_file', name=book.normalized_name) }}"
-              hx-swap="none"
-              onclick="event.preventDefault(); htmx.trigger(this, 'click');">
+              hx-swap="none">
         📁 Open in Finder
       </button>
       <button class="btn btn-secondary"
               hx-post="{{ url_for('copy_path', name=book.normalized_name) }}"
-              hx-swap="none"
-              onclick="event.preventDefault(); htmx.trigger(this, 'click');">
+              hx-swap="none">
         📋 Copy Path
       </button>
     </div>
