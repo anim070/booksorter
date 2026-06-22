@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Book Search{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script>
+    document.addEventListener('htmx:afterRequest', function(evt) {
+      var url = evt.detail.requestConfig.path;
+      var toast = document.getElementById('toast');
+      if (url && url.indexOf('/copy-path') !== -1) {
+        var resp = JSON.parse(evt.detail.xhr.responseText);
+        if (resp.ok) {
+          navigator.clipboard.writeText(resp.path);
+          toast.textContent = 'Path copied to clipboard!';
+        } else {
+          toast.textContent = 'Error: ' + (resp.error || 'unknown');
+        }
+        toast.classList.add('show');
+        setTimeout(function() { toast.classList.remove('show'); }, 2000);
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="toast"></div>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="logo">📚 Book Sorter</a>
+      <span class="tagline">Search {{ total }} books</span>
+    </div>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
