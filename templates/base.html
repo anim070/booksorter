@@ -10,7 +10,7 @@
     document.addEventListener('htmx:afterRequest', function(evt) {
       var url = evt.detail.requestConfig.path;
       var toast = document.getElementById('toast');
-      if (url && url.indexOf('/copy-path') !== -1) {
+      if (url && url.endsWith('/copy-path')) {
         var resp = JSON.parse(evt.detail.xhr.responseText);
         if (resp.ok) {
           navigator.clipboard.writeText(resp.path);
@@ -25,7 +25,7 @@
   </script>
 </head>
 <body>
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
   <header class="site-header">
     <div class="container">
       <a href="/" class="logo">📚 Book Sorter</a>
