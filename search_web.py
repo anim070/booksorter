@@ -75,8 +75,11 @@ def search_books(query, categories=None, formats=None, hide_duplicates=False, so
 
 @app.route("/")
 def index():
+    t0 = time.time()
     results, total = search_books("")
+    elapsed = time.time() - t0
     return render_template("index.html",
+                         elapsed=elapsed,
                          results=results,
                          total=total,
                          page=1,
