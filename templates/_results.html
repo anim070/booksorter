@@ -28,7 +28,7 @@
 </ul>
 
 {% if total_pages > 1 %}
-<nav class="pagination" hx-target="#search-layout" hx-push-url="true"
+<nav class="pagination" hx-target="#search-layout" hx-select="#search-layout" hx-push-url="true"
      hx-include="#sidebar form, .search-bar input">
   {% if page > 1 %}
   <a href="#"
