@@ -115,6 +115,32 @@ def extract_image_metadata(filepath):
     return result
 
 
+def extract_author_from_filename(raw_name):
+    stem = raw_name
+    if '.' in stem:
+        stem = stem[:stem.rfind('.')]
+    stem = re.sub(r'^\d+:\s*', '', stem)
+
+    paren_contents = re.findall(r'\(([^)]*)\)', stem)
+
+    for content in paren_contents:
+        content = content.strip()
+        if re.search(
+            r'z.library|libgen|pdfdrive|anna.s\s*archive|isbn|\d{4}|'
+            r'edition|converted|early.release|rough.cut|meap|illustrated|guidebook',
+            content, re.I
+        ):
+            continue
+        if re.match(r'^\d+$', content):
+            continue
+        if re.search(r'[,&]|\b[A-Z][a-z]+\s+[A-Z][a-z]+', content):
+            cleaned = re.sub(r'\s+etc\.?\s*$', '', content, flags=re.I).strip()
+            if cleaned:
+                return cleaned
+
+    return None
+
+
 FORMAT_EXTRACTORS = {
     ".pdf": extract_pdf_metadata,
     ".epub": extract_epub_metadata,
@@ -149,10 +175,14 @@ def build_entry(filepath, ext):
     meta = extract_metadata(filepath, ext)
     file_size = os.path.getsize(filepath)
 
+    author = meta["author"]
+    if author is None:
+        author = extract_author_from_filename(raw)
+
     return {
         "normalized_name": normalized,
         "raw_filenames": [raw],
-        "author": meta["author"],
+        "author": author,
         "publisher": meta["publisher"],
         "category": category,
         "page_count": meta["page_count"],
