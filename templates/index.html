@@ -3,7 +3,7 @@
 {% block content %}
 <div id="search-layout" class="search-layout">
   <aside id="sidebar" class="sidebar">
-    <form hx-get="/search" hx-target="#search-layout" hx-push-url="true"
+    <form hx-get="/search" hx-target="#results" hx-push-url="true"
           hx-trigger="change" hx-include=".search-bar input, .sort-select" class="filters-form">
       <div class="filter-group">
         <h3>Category</h3>
@@ -47,7 +47,7 @@
              placeholder="Search books by title, author, ISBN..."
              value="{{ query }}"
              hx-get="/search"
-             hx-target="#search-layout"
+             hx-target="#results"
              hx-push-url="true"
              hx-trigger="keyup changed delay:300ms"
              hx-include="#sidebar form"
@@ -61,7 +61,7 @@
       </span>
       <select name="sort" class="sort-select"
               hx-get="/search"
-              hx-target="#search-layout"
+              hx-target="#results"
               hx-push-url="true"
               hx-trigger="change"
               hx-include="#sidebar form, .search-bar input">
