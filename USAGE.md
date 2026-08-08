@@ -60,6 +60,33 @@ python3 build_book_db.py ~/EBooks
 python3 build_book_db.py ~/EBooks
 ```
 
+## search_web.py — Search webapp
+
+Flask + HTMX single-page app that searches the JSON database with an Anna's Archive-style interface.
+
+### Install dependencies
+
+```bash
+pip3 install flask
+```
+
+### Usage
+
+```bash
+python3 search_web.py
+```
+
+Opens on http://127.0.0.1:5000.
+
+### Features
+
+- **Search**: case-insensitive by title, author, ISBN
+- **Filters**: sidebar with category checkboxes, format checkboxes, hide-duplicates toggle
+- **Sort**: by title, author, file size, page count
+- **Pagination**: 20 results per page, HTMX-powered partial page loads
+- **Book detail**: metadata table, "Open in Finder" (macOS), "Copy Path", editable notes
+- **Notes**: saved back to `book_database.json` atomically, never overwritten by `build_book_db.py`
+
 ### JSON schema
 
 Each entry in `book_database.json`:

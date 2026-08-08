@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 *.tmp
 book_database.json
+.superpowers/

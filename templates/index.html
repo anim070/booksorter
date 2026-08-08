@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Book Search{% endblock %}
+{% block content %}
+<div id="search-layout" class="search-layout">
+  <aside id="sidebar" class="sidebar">
+    <form hx-get="/search" hx-target="#results" hx-select="#results" hx-push-url="true"
+          hx-trigger="change" hx-include=".search-bar input, .sort-select" class="filters-form">
+      <div class="filter-group">
+        <h3>Category</h3>
+        {% for cat, count in categories.items() %}
+        <label class="filter-label">
+          <input type="checkbox" name="category" value="{{ cat }}"
+                 {% if cat in selected_categories %}checked{% endif %}>
+          <span>{{ cat }}</span>
+          <span class="count">{{ count }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="filter-group">
+        <h3>Format</h3>
+        {% for fmt, count in formats.items() %}
+        <label class="filter-label">
+          <input type="checkbox" name="format" value="{{ fmt }}"
+                 {% if fmt in selected_formats %}checked{% endif %}>
+          <span>{{ fmt }}</span>
+          <span class="count">{{ count }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="filter-group">
+        <h3>Duplicates</h3>
+        <label class="filter-label">
+          <input type="checkbox" name="hide_duplicates" value="true"
+                 {% if hide_duplicates %}checked{% endif %}>
+          <span>Hide duplicates</span>
+        </label>
+      </div>
+    </form>
+  </aside>
+
+  <section class="main-content">
+    <div class="search-bar">
+      <input type="search"
+             name="q"
+             placeholder="Search books by title, author, ISBN..."
+             value="{{ query }}"
+             hx-get="/search"
+             hx-target="#results"
+             hx-select="#results"
+             hx-push-url="true"
+             hx-trigger="keyup changed delay:300ms"
+             hx-include="#sidebar form"
+             autofocus>
+    </div>
+
+    <div class="results-header">
+      <span class="result-count">
+        {% if query %}Found {% endif %}{{ total }} result{% if total != 1 %}s{% endif %}
+        {% if elapsed is defined %}({{ "%.3f"|format(elapsed) }}s){% endif %}
+      </span>
+      <select name="sort" class="sort-select"
+              hx-get="/search"
+              hx-target="#results"
+              hx-select="#results"
+              hx-push-url="true"
+              hx-trigger="change"
+              hx-include="#sidebar form, .search-bar input">
+        <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Sort: Relevance</option>
+        <option value="title" {% if sort == 'title' %}selected{% endif %}>Sort: Title A-Z</option>
+        <option value="author" {% if sort == 'author' %}selected{% endif %}>Sort: Author A-Z</option>
+        <option value="size" {% if sort == 'size' %}selected{% endif %}>Sort: File Size</option>
+        <option value="pages" {% if sort == 'pages' %}selected{% endif %}>Sort: Page Count</option>
+      </select>
+    </div>
+
+    <div id="results">
+      {% include "_results.html" %}
+    </div>
+  </section>
+</div>
+{% endblock %}

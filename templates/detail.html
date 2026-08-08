@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ book.normalized_name }} — Book Details{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="/">&larr; Back to search</a>
+</nav>
+
+<div class="detail-layout">
+  <div class="detail-main">
+    <h1 class="detail-title">{{ book.normalized_name | replace('.pdf', '') | replace('.epub', '') | replace('.djvu', '') }}</h1>
+    {% if book.author %}
+    <p class="detail-author">{{ book.author }}</p>
+    {% endif %}
+
+    <table class="detail-table">
+      <tr>
+        <th>Category</th>
+        <td>{{ book.category or '—' }}</td>
+      </tr>
+      <tr>
+        <th>Format</th>
+        <td><span class="format-badge format-{{ book.format or 'unknown' }}">{{ (book.format or 'unknown') | upper }}</span></td>
+      </tr>
+      <tr>
+        <th>Pages</th>
+        <td>{{ book.page_count or '—' }}</td>
+      </tr>
+      <tr>
+        <th>ISBN</th>
+        <td>{{ book.isbn or '—' }}</td>
+      </tr>
+      <tr>
+        <th>Publisher</th>
+        <td>{{ book.publisher or '—' }}</td>
+      </tr>
+      <tr>
+        <th>File Size</th>
+        <td>
+          {% if book.file_size %}
+          {{ "{:,.0f}".format(book.file_size / 1024) }} KB
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      <tr>
+        <th>File Path</th>
+        <td class="file-path-cell"><code>{{ book.file_path }}</code></td>
+      </tr>
+    </table>
+
+    <div class="detail-actions">
+      <button class="btn"
+              hx-post="{{ url_for('open_file', name=book.normalized_name) }}"
+              hx-swap="none">
+        📁 Open in Finder
+      </button>
+      <button class="btn btn-secondary"
+              hx-post="{{ url_for('copy_path', name=book.normalized_name) }}"
+              hx-swap="none">
+        📋 Copy Path
+      </button>
+    </div>
+
+    {% if duplicates %}
+    <div class="duplicates-section">
+      <h3>Duplicates ({{ duplicates | length }})</h3>
+      <ul class="dup-list">
+        {% for dup in duplicates %}
+        <li><code>{{ dup.file_path }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="notes-section">
+      <h3>Notes</h3>
+      <textarea id="notes-editor" name="notes" class="notes-editor" rows="5">{{ book.notes or '' }}</textarea>
+      <button class="btn btn-secondary"
+              hx-post="{{ url_for('save_notes', name=book.normalized_name) }}"
+              hx-include="#notes-editor"
+              hx-target="#notes-status"
+              hx-swap="innerHTML">
+        Save Notes
+      </button>
+      <span id="notes-status"></span>
+    </div>
+  </div>
+</div>
+{% endblock %}
